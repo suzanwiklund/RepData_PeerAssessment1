@@ -4,84 +4,77 @@ output:
   html_document:
     keep_md: true
 ---
-```{r setoptions, echo=FALSE}
-library(knitr)
-opts_chunk$set(scipen=0,digits=2)
-```
 
-```{r libraries, echo=FALSE, message=FALSE, results='hide'}
-library(dplyr)
-library(data.table)
-library(ggplot2)
-```
+
+
 
 ## Loading and preprocessing the data
 I unzipped and read dataset activity.csv into R.
-```{r echo=FALSE}
-setwd("/Users/Non-corrupt user/Desktop/Suzy/DataScience/ReproducibleResearch/RepData_PeerAssessment1")
 
-```
-```{r}
+
+```r
 unzip("activity.zip" ) 
 dateDownload<-date()
 data <- read.csv("activity.csv",header=TRUE)
 ```
 
 ## What is mean total number of steps taken per day?
-```{r total_steps}
+
+```r
 total_steps <- tapply(data$steps,data$date,sum)
 hist(total_steps, main="Total Steps Taken per Day", xlab="Number of Steps")
-
 ```
+
+![plot of chunk total_steps](figure/total_steps-1.png) 
 
 Above is the distribution of the total number of steps taken per day. 
 
-```{r}
+
+```r
 mean_steps <- mean(total_steps,na.rm=TRUE)
 median_steps <- median(total_steps,na.rm=TRUE)
-
 ```
-The mean number of total steps taken: `r format(mean_steps,digits=7, big.mark=",")`
+The mean number of total steps taken: 10,766.19
 
-The median number of total steps taken: `r format(median_steps,big.mark=",")`
+The median number of total steps taken: 10,765
 
 ## What is the average daily activity pattern?
-```{r,echo=FALSE,message=FALSE}
-
-steps_by_interval <- data %>%
-                     group_by(interval) %>%
-                     summarize(avg_steps=mean(steps, na.rm=TRUE))%>%
-                     arrange(interval)
-```
 
 
-```{r steps_by_interval}
+
+
+```r
 plot(steps_by_interval, type="l",
      ylab="Average Steps per Interval",
      xlab="Interval",
      main="Average Number of Steps Taken per Interval")
 ```
 
+![plot of chunk steps_by_interval](figure/steps_by_interval-1.png) 
+
 This is a plot of the average number of steps taken per 5-minute interval.
-```{r}
+
+```r
 max_steps <-max(steps_by_interval$avg_steps)     
 max_int <-steps_by_interval[which(steps_by_interval$avg_steps == max_steps),1]   
 ```
 
-The maximum average steps during an interval is `r format(max_steps,digits=5)`, and this occurs during interval `r max_int`.
+The maximum average steps during an interval is 206.17, and this occurs during interval 835.
 
 
 ## Imputing missing values
-```{r}
+
+```r
 step_miss <-sum(is.na(data$steps))
 pct_miss <- mean(is.na(data$steps))
 ```
 
-There are `r format(step_miss,big.mark=",")` records with missing values for the steps. This represents `r format(pct_miss*100,digit=4)`% of the records.
+There are 2,304 records with missing values for the steps. This represents 13.11% of the records.
 
 I imputed the values for the missing steps by using the mean for the similar interval period. 
 
-```{r, results="hide"}
+
+```r
 #imput missing values -using avg of 5 minute interval
 na <- data[is.na(data$steps),]   #missing steps
 
@@ -101,36 +94,41 @@ data_wimput <- rbind(data_noNA,data_miss_steps) #dataset to work with
 
 
 
-```{r total_steps_imputted}
+
+```r
 #create histogram of total number of steps taken each day - new dataset
 total_steps_imput <- tapply(data_wimput$steps,data_wimput$date,sum)
 hist(total_steps_imput, main="Total Steps \n  Imputted Dataset", xlab="Number of Steps")
 ```
 
+![plot of chunk total_steps_imputted](figure/total_steps_imputted-1.png) 
+
 Here is a histogram of the number of steps using the imputted dataset.
 
 
-```{r}
+
+```r
 #mean and median of total steps - imputted dataset
 mean_steps_imput<- mean(total_steps_imput,na.rm=TRUE)
 median_steps_imput<- median(total_steps_imput,na.rm=TRUE)
 ```
 
 
-The mean number of total steps taken: `r format(mean_steps_imput,digits=7,big.mark=",")`
+The mean number of total steps taken: 10,766.19
 
-The median number of total steps taken: `r format(median_steps_imput,digits=7,big.mark=",")`
+The median number of total steps taken: 10,766.19
 
 There is very little impact using the mean of the interval period to imput the missing steps values rather than just ignoring them. 
 
-Mean with missing steps ignored - mean missing steps imputed: `r format(mean_steps - mean_steps_imput,digits=4)`
+Mean with missing steps ignored - mean missing steps imputed: 0
 
-Median with missing steps ignored - median missing steps imputed: `r format(median_steps - median_steps_imput,digits=4)`
+Median with missing steps ignored - median missing steps imputed: -1.189
 
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
-```{r weekday_weekend}
+
+```r
 # taking date column, making it a date, taking the weekdays()
 # putting, as a factor into weekpart
 # then using levels() to assign it to either weekday or weekend
@@ -160,14 +158,24 @@ qplot(interval,avg_steps, data=steps_by_interval_weekend,
       ggtitle("Number of Steps per Interval  \n  Weekday vs. Weekend") 
 ```
 
+![plot of chunk weekday_weekend](figure/weekday_weekend-1.png) 
+
 Looking at the above graph you can see that this individual took more steps on average during the weekends than during the weekdays.  
 
-```{r}
+
+```r
 weekend_weekday <- data_wimput %>%
     group_by(weekpart) %>%
     summarize(avg_steps=mean(steps, na.rm=TRUE),
               median=median(steps,na.rm=TRUE))%>%
     arrange(weekpart)
 weekend_weekday
+```
 
+```
+## Source: local data table [2 x 3]
+## 
+##   weekpart avg_steps median
+## 1  weekday  35.61058      0
+## 2  weekend  42.36640      0
 ```
